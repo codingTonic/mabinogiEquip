@@ -1,0 +1,716 @@
+/* 기본 레이아웃 */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+header {
+  background-color: #3b5998;
+  color: #fff;
+  padding: 1rem 2rem;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-text h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.header-text p {
+  margin: 0.3rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+main {
+  padding: 1rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+section {
+  margin-bottom: 2rem;
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  margin-top: 0;
+  color: #3b5998;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.form-row-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-row-inline label {
+  margin-bottom: 0;
+}
+
+.form-row-inline .toggle-label {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+input[type="text"],
+select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.primary {
+  background-color: #3b5998;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.primary:hover {
+  background-color: #30487b;
+}
+
+.secondary {
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  background-color: #b3b3b3;
+}
+
+.theme-toggle-btn {
+  min-width: 140px;
+  font-weight: 600;
+}
+
+/*
+ * Danger button style for destructive actions like delete.
+ * Provides a distinct red appearance to communicate risk of action.
+ */
+.danger {
+  background-color: #d9534f;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.danger:hover {
+  background-color: #c9302c;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.character-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.character-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.7rem;
+  background: #fafafa;
+  cursor: pointer;
+  flex: 1 1 200px;
+}
+
+.character-card:hover {
+  background: #f0f0f0;
+}
+
+.character-card details {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.character-card details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.character-card details ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.equipment-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.equipment-section {
+  flex: 1 1 420px;
+}
+
+.equipment-layout .equipment-section {
+  margin-top: 0;
+}
+
+.rune-info {
+  flex: 1 1 260px;
+  background: #f8f9fb;
+  border: 1px solid #e0e3ea;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.rune-info h3 {
+  margin: 0 0 0.5rem;
+  color: #3b5998;
+}
+
+.rune-back-btn {
+  display: none;
+  margin-bottom: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #3b5998;
+  border-radius: 4px;
+  background: #fff;
+  color: #3b5998;
+  cursor: pointer;
+}
+
+.rune-back-btn:active {
+  background: #eef2fb;
+}
+
+.rune-info-message {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.rune-list {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rune-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rune-tab {
+  flex: 1 1 auto;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  border: 1px solid #c4c9d6;
+  border-radius: 4px;
+  background: #f1f3f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.rune-tab:hover {
+  background: #e4e8f3;
+  border-color: #3b5998;
+}
+
+.rune-tab.active {
+  background: #3b5998;
+  color: #fff;
+  border-color: #3b5998;
+}
+
+.rune-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rune-group + .rune-group {
+  margin-top: 0.75rem;
+}
+
+.rune-group h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #2c3a67;
+}
+
+.rune-group-basic {
+  margin-top: 0.25rem;
+}
+
+.rune-option {
+  display: grid;
+  grid-template-columns: 130px 100px 1fr;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d4d8e0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.rune-option-name {
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: left;
+  padding-left: 0.25rem;
+}
+
+.rune-option-grade {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.rune-option-grade .grade-row {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.rune-grade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.2em;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.78rem;
+  background-color: #888;
+}
+
+.rune-grade-elite {
+  background-color: #9656ff;
+}
+
+.rune-grade-legendary {
+  background-color: #ec6016;
+}
+
+.rune-grade-epic {
+  background-color: #ed16a8;
+}
+
+.rune-grade-mythic {
+  background-color: #ffdc57;
+  color: #3b2b00;
+}
+
+.rune-grade-new {
+  background-color: #0db376;
+}
+
+.rune-option-desc {
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.rune-option-header {
+  background: #eef2fb;
+  border-color: #c4c9d6;
+  cursor: default;
+}
+
+.rune-option-header .rune-option-name,
+.rune-option-header .rune-option-grade,
+.rune-option-header .rune-option-desc {
+  color: #2c3a67;
+}
+
+.rune-option:hover {
+  background: #eef2fb;
+  border-color: #3b5998;
+}
+
+.rune-option.active {
+  background: #3b5998;
+  color: #fff !important;
+  border-color: #3b5998;
+}
+
+.rune-option.active span {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.rune-option.active .rune-option-name,
+.rune-option.active .rune-option-grade {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.rune-option.active .rune-option-desc {
+  color: #fff !important;
+}
+
+.rune-option.active .rune-grade-badge {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.rune-search-row {
+  margin-bottom: 0.6rem;
+}
+
+.rune-search-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #cfd3dc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.rune-groups-container,
+.rune-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rune-search-empty {
+  padding: 0.75rem;
+  border: 1px dashed #cfd3dc;
+  border-radius: 4px;
+  text-align: center;
+  color: #6c7386;
+  font-size: 0.85rem;
+}
+
+.rune-bonus-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rune-bonus-label {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3a67;
+  align-self: center;
+  min-width: 72px;
+}
+
+.rune-bonus-select {
+  flex: 1 1 140px;
+  min-width: 140px;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid #cfd3dc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background-color: #fff;
+}
+
+.rune-bonus-select:disabled {
+  background-color: #f2f4fa;
+  color: #a0a7b8;
+}
+
+.equipment-item.selected {
+  background: #eef2fb;
+  box-shadow: 0 0 0 2px #3b5998 inset;
+}
+
+.rune-display {
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+  color: #444;
+}
+
+.rune-display span {
+  font-weight: 600;
+  color: #3b5998;
+}
+
+.editor-actions {
+  margin-top: 1rem;
+}
+
+.equipment-section {
+  margin-top: 1.5rem;
+}
+
+.equipment-item {
+  border-top: 1px solid #eee;
+  padding: 0.8rem 0.5rem;
+}
+
+.equipment-item:first-child {
+  border-top: none;
+}
+
+.equipment-header {
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+  color: #222;
+}
+
+.gem-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.gem-row label {
+  font-size: 0.85rem;
+}
+
+.gem-option-select {
+  flex: 1 1 160px;
+  min-width: 150px;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #cfd3dc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background-color: #fff;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  background: #f5f5f5;
+  font-size: 0.8rem;
+  color: #888;
+  border-top: 1px solid #eee;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.button-group button {
+  flex: 1 1 auto;
+  min-width: 150px;
+}
+
+/* 다크 모드 */
+body.theme-dark {
+  background-color: #1c2230;
+  color: #e6ebf7;
+}
+
+body.theme-dark header {
+  background-color: #233b67;
+}
+
+body.theme-dark section {
+  background: #262d3d;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+body.theme-dark h2 {
+  color: #8ab4ff;
+}
+
+body.theme-dark label {
+  color: #d8def0;
+}
+
+body.theme-dark input[type="text"],
+body.theme-dark select,
+body.theme-dark .rune-search-input,
+body.theme-dark .gem-option-select,
+body.theme-dark .rune-bonus-select {
+  background: #1f2533;
+  border-color: #37415a;
+  color: #e6ebf7;
+}
+
+body.theme-dark input::placeholder,
+body.theme-dark .rune-search-input::placeholder {
+  color: #8f9ab8;
+}
+
+body.theme-dark .primary {
+  background-color: #4a6edd;
+}
+
+body.theme-dark .primary:hover {
+  background-color: #3b5ec5;
+}
+
+body.theme-dark .secondary {
+  background-color: #3a4257;
+  color: #e6ebf7;
+}
+
+body.theme-dark .secondary:hover {
+  background-color: #4a5670;
+}
+
+body.theme-dark .theme-toggle-btn {
+  border: 1px solid #4d5f87;
+  background-color: transparent !important;
+  color: #e6ebf7;
+}
+
+body.theme-dark .character-card {
+  background: #272f41;
+  border-color: #3a435a;
+}
+
+body.theme-dark .character-card:hover {
+  background: #2f384d;
+}
+
+body.theme-dark .rune-info {
+  background: #22293a;
+  border-color: #3a435a;
+}
+
+body.theme-dark .rune-back-btn {
+  color: #e6ebf7;
+  border-color: #4d5f87;
+}
+
+body.theme-dark .rune-option {
+  background: #252c3f;
+  border-color: #36405a;
+  color: #dbe2f6;
+}
+
+body.theme-dark .rune-option-desc {
+  color: #c7d2f6;
+}
+
+body.theme-dark .rune-option:hover {
+  background: #2f3850;
+  border-color: #5670c4;
+}
+
+body.theme-dark .rune-option-header {
+  background: #2d3650;
+  border-color: #43506c;
+}
+
+body.theme-dark .rune-option-header .rune-option-name,
+body.theme-dark .rune-option-header .rune-option-grade,
+body.theme-dark .rune-option-header .rune-option-desc {
+  color: #bfd1ff;
+}
+
+body.theme-dark .rune-search-input {
+  border-color: #3c4763;
+}
+
+body.theme-dark .rune-search-empty {
+  border-color: #3c4763;
+  color: #9aa6c6;
+}
+
+body.theme-dark .rune-bonus-label {
+  color: #c7cfea;
+}
+
+body.theme-dark .rune-bonus-select:disabled {
+  background: #1b202e;
+  color: #737d97;
+}
+
+body.theme-dark .equipment-item {
+  border-color: #2f374a;
+}
+
+body.theme-dark .equipment-item.selected {
+  background: #313a54;
+  box-shadow: 0 0 0 2px #5670c4 inset;
+}
+
+body.theme-dark .rune-display {
+  color: #cdd5ec;
+}
+
+body.theme-dark .rune-display span {
+  color: #8ab4ff;
+}
+
+body.theme-dark footer {
+  background: #1f2533;
+  color: #9aa6c6;
+  border-top-color: #2f374a;
+}
+
+@media (max-width: 900px) {
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .theme-toggle-btn {
+    width: 100%;
+  }
+
+  .equipment-layout {
+    flex-direction: column;
+  }
+
+  .rune-info {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .rune-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .equipment-item {
+    scroll-margin-top: 200px;
+  }
+}

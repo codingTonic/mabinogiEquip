@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>모비노기 장비 커스텀</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="header-text">
+        <h1>모비노기 장비 커스텀 도구</h1>
+        <p>캐릭터마다 직업과 장비를 설정하고, 보석과 룬 효과를 확인해 보세요.</p>
+      </div>
+      <button id="themeToggleBtn" type="button" class="secondary theme-toggle-btn">🌙 다크 모드</button>
+    </div>
+  </header>
+  <main>
+    <section id="character-management">
+      <h2>캐릭터 목록</h2>
+      <div id="characterList" class="character-list"></div>
+      <div class="button-group">
+        <button id="addCharacterBtn" class="primary">+ 캐릭터 추가</button>
+        <button id="exportBtn" class="secondary">📥 세팅 내보내기</button>
+        <button id="importBtn" class="secondary">📤 세팅 가져오기</button>
+        <input type="file" id="importFileInput" accept=".json" style="display: none;" />
+      </div>
+    </section>
+    <section id="character-editor" class="hidden">
+      <h2>캐릭터 편집</h2>
+      <div class="form-row">
+        <label for="charNameInput">캐릭터 이름</label>
+        <input type="text" id="charNameInput" placeholder="이름" />
+      </div>
+      <div class="form-row">
+        <label for="charJobSelect">직업</label>
+        <select id="charJobSelect"></select>
+      </div>
+      <div class="form-row form-row-inline">
+        <label class="toggle-label">
+          <input type="checkbox" id="toggleGemOptions" checked />
+          보석 옵션 표시
+        </label>
+      </div>
+      <div class="equipment-layout">
+        <div id="equipmentSection" class="equipment-section"></div>
+        <aside id="runeInfoPanel" class="rune-info">
+          <h3>룬 선택</h3>
+          <button type="button" id="backToEquipmentBtn" class="rune-back-btn">장비로 이동</button>
+          <p id="runeInfoMessage" class="rune-info-message">장비를 선택하면 사용 가능한 룬이 표시됩니다.</p>
+          <div id="runeList" class="rune-list"></div>
+        </aside>
+      </div>
+      <div class="editor-actions">
+        <button id="saveCharacterBtn" class="primary">저장</button>
+        <!-- 새롭게 추가된 캐릭터 삭제 버튼 -->
+        <button id="deleteCharacterBtn" class="danger hidden">삭제</button>
+        <button id="cancelEditBtn" class="secondary">취소</button>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <p>이 사이트는 모비노기 모바일 장비 커스텀을 돕기 위해 제작된 예제입니다.</p>
+  </footer>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

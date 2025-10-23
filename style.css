@@ -326,6 +326,28 @@ select {
   flex: 1 1 auto;
 }
 
+.rune-summary-gem-note {
+  padding: 0 1.2rem 0.8rem;
+}
+
+.rune-summary-gem-note strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #2c3a67;
+}
+
+.rune-summary-gem-note ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #444;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.rune-summary-gem-note li + li {
+  margin-top: 0.25rem;
+}
+
 .rune-summary-empty {
   margin: 0;
   font-size: 0.85rem;
@@ -806,6 +828,14 @@ body.theme-dark .rune-summary-dialog-body {
   background: #1f2737;
 }
 
+body.theme-dark .rune-summary-gem-note strong {
+  color: #c7d6ff;
+}
+
+body.theme-dark .rune-summary-gem-note ul {
+  color: #cfd6ee;
+}
+
 body.theme-dark .rune-summary-table th {
   background: #2d3650;
   color: #c7d6ff;
@@ -987,4 +1017,195 @@ body.theme-dark footer {
   .rune-summary-dialog-footer .primary {
     width: 100%;
   }
+}
+.stats-main {
+  padding: 1rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.stats-desc {
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.stats-table-wrapper {
+  overflow-x: auto;
+}
+
+.stat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 720px;
+}
+
+.stat-table th,
+.stat-table td {
+  border: 1px solid #d4d8e0;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.stat-table thead th {
+  background: #eef2fb;
+  color: #2c3a67;
+}
+
+.stat-input-cell {
+  width: 120px;
+}
+
+.stat-input {
+  width: 100%;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid #cfd3dc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.stat-input:focus {
+  outline: 2px solid #3b5998;
+  outline-offset: 1px;
+}
+
+.stat-input-cell .input-error {
+  border-color: #d9534f;
+}
+
+.stat-total-cell {
+  font-weight: 600;
+  color: #2c3a67;
+}
+
+.stats-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.effect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.effect-field label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.effect-field textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #cfd3dc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.effect-summary-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #444;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.effect-summary-list li + li {
+  margin-top: 0.25rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.header-actions a {
+  text-decoration: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  border: 1px solid #c4c9d6;
+  color: #2c3a67;
+  background: #fff;
+}
+
+.header-actions a:hover {
+  background: #eef2fb;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .stat-table {
+    font-size: 0.85rem;
+  }
+
+  .stat-input-cell {
+    width: 90px;
+  }
+}
+
+body.theme-dark.stats-page {
+  background-color: #1c2230;
+  color: #e6ebf7;
+}
+
+body.theme-dark .stats-desc {
+  color: #b8c4db;
+}
+
+body.theme-dark .header-actions a {
+  background: #1f2533;
+  border-color: #3a435a;
+  color: #e6ebf7;
+}
+
+body.theme-dark .header-actions a:hover {
+  background: #2d3650;
+}
+
+body.theme-dark .stat-table thead th {
+  background: #2d3650;
+  color: #c7d6ff;
+}
+
+body.theme-dark .stat-table th,
+body.theme-dark .stat-table td {
+  border-color: #3a435a;
+}
+
+body.theme-dark .stat-input {
+  background: #1f2737;
+  border-color: #3a435a;
+  color: #e6ebf7;
+}
+
+body.theme-dark .stat-total-cell {
+  color: #c7d6ff;
+}
+
+body.theme-dark .effect-field textarea {
+  background: #1f2737;
+  border-color: #3a435a;
+  color: #e6ebf7;
+}
+
+body.theme-dark .effect-summary-list {
+  color: #cfd6ee;
 }

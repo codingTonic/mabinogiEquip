@@ -63,6 +63,7 @@ const runeSummaryModal = document.getElementById('runeSummaryModal');
 const runeSummaryContent = document.getElementById('runeSummaryContent');
 const openSummaryBtn = document.getElementById('openSummaryBtn');
 const copySummaryBtn = document.getElementById('copySummaryBtn');
+const gemSummaryList = document.getElementById('gemSummaryList');
 const summaryCloseButtons = document.querySelectorAll('[data-action="close-summary"]');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 
@@ -155,6 +156,69 @@ const RUNE_BONUS_GROUPS = {
   ]
 };
 
+const GEM_BASE_STATS = [
+  { key: 'allStats', label: '모든 능력치', perSelection: 44 },
+  { key: 'hp', label: '최대 체력', perSelection: 420 }
+];
+
+const GEM_VARIANT_STATS = {
+  '데미지 증가': {
+    valuePerGem: 2.10,
+    formatter: (type, total) => `#${type} 데미지 ${formatStatValue(total)}% 증가`
+  },
+  '재사용 대기시간 감소': {
+    valuePerGem: 0.70,
+    formatter: (type, total) => `#${type} 재사용 대기시간 ${formatStatValue(total)}% 감소`
+  }
+};
+
+const GEM_BASE_ATTRIBUTE_DETAILS = [
+  { label: '힘', base: 1239, incrementKey: 'allStats' },
+  { label: '솜씨', base: 1239, incrementKey: 'allStats' },
+  { label: '지력', base: 1239, incrementKey: 'allStats' },
+  { label: '의지', base: 1239, incrementKey: 'allStats' },
+  { label: '행운', base: 1239, incrementKey: 'allStats' },
+  { label: '공격력', base: 1626 },
+  { label: '방어력', base: 2710 },
+  { label: '브레이크', base: 342 },
+  { label: '강타 강화', base: 342 },
+  { label: '콤보 강화', base: 335 },
+  { label: '스킬 위력', base: 348 },
+  { label: '광역 강화', base: 348 },
+  { label: '회복력', base: 350 },
+  { label: '급소 회피', base: 81.8, decimals: 1 },
+  { label: '추가타', base: 342 },
+  { label: '피해 감소', base: 342 },
+  { label: '빠른 공격', base: 335 },
+  { label: '연타 강화', base: 335 },
+  { label: '빠른 스킬', base: 348 },
+  { label: '추가 체력', base: 1094, incrementKey: 'hp' },
+  { label: '궁극기', base: 350 },
+  { label: '치명타', base: 342 },
+  { label: '궁극기 (추가)', base: 358 },
+  { label: '치명타 (추가)', base: 349.5, decimals: 1 }
+];
+
+const ADDITIONAL_BONUS_SOURCES = [
+  'rune',
+  'gem',
+  'pet',
+  'levelUpCards',
+  'titles',
+  'other',
+  'manual'
+];
+
+const additionalStatBonuses = ADDITIONAL_BONUS_SOURCES.reduce((acc, key) => {
+  acc[key] = {};
+  return acc;
+}, {});
+
+const additionalEffectBonuses = ADDITIONAL_BONUS_SOURCES.reduce((acc, key) => {
+  acc[key] = [];
+  return acc;
+}, {});
+
 const EQUIP_KEYS_WITH_RUNE_BONUS = {
   weapon: { primaryGroup: 'offense', secondaryGroup: 'offense', primaryLabel: '보조 옵션 1', secondaryLabel: '보조 옵션 2' },
   necklace: { primaryGroup: 'offense', secondaryGroup: 'offense', primaryLabel: '보조 옵션 1', secondaryLabel: '보조 옵션 2' },
@@ -186,6 +250,25 @@ function normalizeRarityLabel(label) {
   }
   const base = BASE_RARITIES.find((candidate) => trimmed.startsWith(candidate));
   return base || null;
+}
+
+function formatNumber(value, decimals = 0) {
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+function formatStatValue(value, digits = 2) {
+  return parseFloat(value.toFixed(digits)).toString();
+}
+
+function createBaseTotals() {
+  const totals = {};
+  GEM_BASE_STATS.forEach((stat) => {
+    totals[stat.key] = 0;
+  });
+  return totals;
 }
 
 function createGemOptionSelect(eqKey, slotIndex, optIndex, initialValue) {
@@ -285,6 +368,174 @@ function buildRuneSummaryRows(char) {
   return rows;
 }
 
+function collectGemStatTotals(char) {
+  const baseTotals = createBaseTotals();
+  const variantTotals = new Map();
+  if (!char || !char.equipment) {
+    return { baseTotals, variantEntries: [] };
+  }
+
+  equipmentTypes.forEach((eq) => {
+    const eqData = char.equipment[eq.key];
+    if (!eqData || !Array.isArray(eqData.gemOptions)) return;
+    eqData.gemOptions.forEach((slot) => {
+      if (!Array.isArray(slot)) return;
+      slot.forEach((selection) => {
+        if (!selection || typeof selection !== 'string') return;
+        const [rawType, rawVariant] = selection.split(' - ');
+        if (!rawVariant) return;
+        const type = rawType.trim();
+        const variant = rawVariant.trim();
+        if (!type || !variant) return;
+
+        GEM_BASE_STATS.forEach((stat) => {
+          baseTotals[stat.key] += stat.perSelection;
+        });
+
+        const variantInfo = GEM_VARIANT_STATS[variant];
+        if (variantInfo) {
+          const key = `${type}|${variant}`;
+          const entry = variantTotals.get(key) || { type, variant, count: 0 };
+          entry.count += 1;
+          variantTotals.set(key, entry);
+        }
+      });
+    });
+  });
+
+  return { baseTotals, variantEntries: Array.from(variantTotals.values()) };
+}
+
+function buildCharacterStatSummary(char) {
+  const { baseTotals } = collectGemStatTotals(char);
+  return GEM_BASE_ATTRIBUTE_DETAILS.map((entry) => {
+    const decimals = entry.decimals !== undefined ? entry.decimals : 0;
+    const baseValue = entry.base;
+    const extraFromGems = entry.incrementKey ? (baseTotals[entry.incrementKey] || 0) : 0;
+    const extraFromExternal = getAdditionalStatBonus(entry.label);
+    const extra = extraFromGems + extraFromExternal;
+    const total = baseValue + extra;
+    return {
+      label: entry.label,
+      base: baseValue,
+      extra,
+      total,
+      decimals
+    };
+  });
+}
+
+function buildGemEffectLines(char) {
+  const { variantEntries } = collectGemStatTotals(char);
+  const lines = variantEntries.map((entry) => {
+    const variantInfo = GEM_VARIANT_STATS[entry.variant];
+    if (!variantInfo) {
+      return `#${entry.type} ${entry.variant} ×${entry.count}`;
+    }
+    const totalValue = variantInfo.valuePerGem * entry.count;
+    return variantInfo.formatter(entry.type, totalValue);
+  });
+  return lines;
+}
+
+const BONUS_SOURCE_ALIASES = {
+  pets: 'pet',
+  pet: 'pet',
+  gems: 'gem',
+  gem: 'gem',
+  runes: 'rune',
+  rune: 'rune',
+  levelup: 'levelUpCards',
+  levelupcards: 'levelUpCards',
+  cards: 'levelUpCards',
+  title: 'titles',
+  titles: 'titles',
+  others: 'other',
+  other: 'other'
+};
+
+function normalizeBonusSource(source) {
+  const key = (source || '').toString().trim();
+  const normalized = BONUS_SOURCE_ALIASES[key] || key;
+  return ADDITIONAL_BONUS_SOURCES.includes(normalized) ? normalized : 'manual';
+}
+
+function getAdditionalStatBonus(label) {
+  return ADDITIONAL_BONUS_SOURCES.reduce(
+    (sum, key) => sum + (Number(additionalStatBonuses[key][label]) || 0),
+    0
+  );
+}
+
+function getAdditionalEffectLines() {
+  const lines = [];
+  ADDITIONAL_BONUS_SOURCES.forEach((key) => {
+    additionalEffectBonuses[key].forEach((entry) => {
+      if (entry) {
+        lines.push(entry);
+      }
+    });
+  });
+  return lines;
+}
+
+function setAdditionalStatBonuses(source, bonuses = {}) {
+  const key = normalizeBonusSource(source);
+  const sanitized = {};
+  Object.entries(bonuses || {}).forEach(([label, value]) => {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric !== 0) {
+      sanitized[label] = numeric;
+    }
+  });
+  additionalStatBonuses[key] = sanitized;
+  refreshRuneSummary();
+}
+
+function addAdditionalStatBonus(source, label, amount) {
+  if (!label) return;
+  const key = normalizeBonusSource(source);
+  const numeric = Number(amount);
+  if (!Number.isFinite(numeric)) return;
+  const current = Number(additionalStatBonuses[key][label]) || 0;
+  const next = current + numeric;
+  if (next === 0) {
+    delete additionalStatBonuses[key][label];
+  } else {
+    additionalStatBonuses[key][label] = next;
+  }
+  refreshRuneSummary();
+}
+
+function setAdditionalEffectBonuses(source, effects = []) {
+  const key = normalizeBonusSource(source);
+  additionalEffectBonuses[key] = Array.isArray(effects)
+    ? effects.filter((entry) => entry).map((entry) => entry.toString())
+    : [];
+  refreshRuneSummary();
+}
+
+function addAdditionalEffectBonus(source, description) {
+  if (!description) return;
+  const key = normalizeBonusSource(source);
+  additionalEffectBonuses[key].push(description.toString());
+  refreshRuneSummary();
+}
+
+function clearAdditionalBonuses(source) {
+  if (source) {
+    const key = normalizeBonusSource(source);
+    additionalStatBonuses[key] = {};
+    additionalEffectBonuses[key] = [];
+  } else {
+    ADDITIONAL_BONUS_SOURCES.forEach((key) => {
+      additionalStatBonuses[key] = {};
+      additionalEffectBonuses[key] = [];
+    });
+  }
+  refreshRuneSummary();
+}
+
 function buildRuneSummaryText(char) {
   if (!char) return '';
   const lines = [`캐릭터: ${char.name || '이름없음'} (${char.job || '직업 미지정'})`];
@@ -295,6 +546,21 @@ function buildRuneSummaryText(char) {
       lines.push(`[${equipment}] ${rune}`);
     }
   });
+  const statSummary = buildCharacterStatSummary(char);
+  const impactedStats = statSummary.filter((stat) => stat.extra !== 0);
+  const effectLines = [...buildGemEffectLines(char), ...getAdditionalEffectLines()];
+  lines.push('', '보석 능력치 합계:');
+  if (impactedStats.length === 0 && effectLines.length === 0) {
+    lines.push('- 보석 옵션이 선택되지 않았습니다.');
+  } else {
+    impactedStats.forEach((stat) => {
+      const base = formatNumber(stat.base, stat.decimals);
+      const extra = formatNumber(stat.extra, stat.decimals);
+      const total = formatNumber(stat.total, stat.decimals);
+      lines.push(`- ${stat.label}: ${base} + ${extra} = ${total}`);
+    });
+    effectLines.forEach((line) => lines.push(`- ${line}`));
+  }
   return lines.join('\n');
 }
 
@@ -311,6 +577,12 @@ function renderRuneSummary() {
   if (!runeSummaryContent) return;
   const char = getCurrentEditingChar();
   runeSummaryContent.innerHTML = '';
+  if (openSummaryBtn) {
+    openSummaryBtn.disabled = !char;
+  }
+  if (gemSummaryList) {
+    gemSummaryList.innerHTML = '';
+  }
 
   if (!char) {
     const emptyMessage = document.createElement('p');
@@ -320,6 +592,12 @@ function renderRuneSummary() {
     if (copySummaryBtn) {
       copySummaryBtn.disabled = true;
       resetCopyButtonLabel();
+    }
+    if (gemSummaryList) {
+      const li = document.createElement('li');
+      li.className = 'rune-summary-empty';
+      li.textContent = '보석 옵션이 선택되지 않았습니다.';
+      gemSummaryList.appendChild(li);
     }
     return;
   }
@@ -356,10 +634,48 @@ function renderRuneSummary() {
     copySummaryBtn.disabled = false;
     resetCopyButtonLabel();
   }
+
+  if (gemSummaryList) {
+    const statSummary = buildCharacterStatSummary(char);
+    const effectLines = [...buildGemEffectLines(char), ...getAdditionalEffectLines()];
+    const impactedStats = statSummary.filter((stat) => stat.extra !== 0);
+    if (impactedStats.length === 0 && effectLines.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'rune-summary-empty';
+      li.textContent = '보석 옵션이 선택되지 않았습니다.';
+      gemSummaryList.appendChild(li);
+    } else {
+      impactedStats.forEach((stat) => {
+        const li = document.createElement('li');
+        const base = formatNumber(stat.base, stat.decimals);
+        const extra = formatNumber(stat.extra, stat.decimals);
+        const total = formatNumber(stat.total, stat.decimals);
+        li.textContent = `${stat.label}: ${base} + ${extra} = ${total}`;
+        gemSummaryList.appendChild(li);
+      });
+      effectLines.forEach((text) => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        gemSummaryList.appendChild(li);
+      });
+    }
+  }
 }
 
 function refreshRuneSummary() {
   renderRuneSummary();
+}
+
+function registerStatCalculatorAPI() {
+  if (typeof window === 'undefined') return;
+  window.statCalculator = {
+    setStatBonuses: setAdditionalStatBonuses,
+    addStatBonus: addAdditionalStatBonus,
+    setEffectBonuses: setAdditionalEffectBonuses,
+    addEffectBonus: addAdditionalEffectBonus,
+    clearBonuses: clearAdditionalBonuses,
+    refresh: refreshRuneSummary
+  };
 }
 
 async function copyRuneSummaryToClipboard() {
@@ -471,6 +787,7 @@ function init() {
   }
   if (openSummaryBtn) {
     openSummaryBtn.addEventListener('click', openSummaryModal);
+    openSummaryBtn.disabled = true;
   }
   if (summaryCloseButtons.length > 0) {
     summaryCloseButtons.forEach((btn) =>
@@ -1141,6 +1458,9 @@ function hideEditor() {
   resetActiveEmblemRuneSeason();
   resetRunePanel();
   refreshRuneSummary();
+  if (openSummaryBtn) {
+    openSummaryBtn.disabled = true;
+  }
 }
 
 function saveCurrentCharacter() {
@@ -1342,6 +1662,8 @@ function validateCharacterData(char) {
 
   return validChar;
 }
+
+registerStatCalculatorAPI();
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

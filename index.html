@@ -12,7 +12,10 @@
         <h1>모비노기 장비 커스텀 도구</h1>
         <p>캐릭터마다 직업과 장비를 설정하고, 보석과 룬 효과를 확인해 보세요.</p>
       </div>
-      <button id="themeToggleBtn" type="button" class="secondary theme-toggle-btn">🌙 다크 모드</button>
+      <div class="header-actions">
+        <a class="secondary summary-open-btn" href="stats.html">능력치 계산기</a>
+        <button id="themeToggleBtn" type="button" class="secondary theme-toggle-btn">🌙 다크 모드</button>
+      </div>
     </div>
   </header>
   <main>
@@ -49,7 +52,7 @@
             <h3>룬 선택</h3>
             <button type="button" id="openSummaryBtn" class="secondary summary-open-btn">📊 요약 보기</button>
           </div>
-          <button type="button" id="backToEquipmentBtn" class="rune-back-btn">장비로 이동</button>
+      <button type="button" id="backToEquipmentBtn" class="rune-back-btn">장비로 이동</button>
           <p id="runeInfoMessage" class="rune-info-message">장비를 선택하면 사용 가능한 룬이 표시됩니다.</p>
           <div id="runeList" class="rune-list"></div>
         </aside>
@@ -63,6 +66,12 @@
           </div>
           <div id="runeSummaryContent" class="rune-summary-dialog-body">
             <p class="rune-summary-empty">캐릭터를 선택하면 룬 요약이 표시됩니다.</p>
+          </div>
+          <div class="rune-summary-gem-note">
+            <strong>보석 능력치 합계</strong>
+            <ul id="gemSummaryList">
+              <li class="rune-summary-empty">보석 옵션이 선택되지 않았습니다.</li>
+            </ul>
           </div>
           <div class="rune-summary-dialog-footer">
             <button type="button" id="copySummaryBtn" class="secondary summary-copy-btn">📋 복사</button>

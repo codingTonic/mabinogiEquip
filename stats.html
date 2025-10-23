@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>능력치 계산기 - 모비노기 장비 커스텀</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="stats-page">
+  <header>
+    <div class="header-inner">
+      <div class="header-text">
+        <h1>능력치 계산기</h1>
+        <p>기본 능력치와 각종 보너스를 입력해 최종 능력치를 확인하세요.</p>
+      </div>
+      <div class="header-actions">
+        <a class="secondary" href="index.html">← 메인 페이지로 돌아가기</a>
+      </div>
+    </div>
+  </header>
+  <main class="stats-main">
+    <section>
+      <h2>능력치 테이블</h2>
+      <p class="stats-desc">
+        각 열에 추가 능력치를 입력하면 합계가 즉시 계산됩니다. 필요한 경우 아래 “특수 효과 메모”에 옵션 설명을 함께 기록하세요.
+      </p>
+      <div class="stats-table-wrapper">
+        <table class="stat-table" aria-describedby="statTableHint">
+          <thead>
+            <tr>
+              <th scope="col">능력치</th>
+              <th scope="col">기본</th>
+              <th scope="col">룬</th>
+              <th scope="col">보석</th>
+              <th scope="col">펫</th>
+              <th scope="col">레벨업 카드</th>
+              <th scope="col">타이틀</th>
+              <th scope="col">기타</th>
+              <th scope="col">합계</th>
+            </tr>
+          </thead>
+          <tbody id="statTableBody"></tbody>
+        </table>
+        <p id="statTableHint" class="sr-only">각 칸에 숫자를 입력해 추가 능력치를 설정할 수 있습니다.</p>
+      </div>
+      <div class="stats-actions">
+        <button type="button" id="resetAllBtn" class="secondary">모든 입력 초기화</button>
+        <button type="button" id="copyStatsBtn" class="primary">📋 요약 복사</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>특수 효과 메모</h2>
+      <p class="stats-desc">
+        옵션 설명이나 부가 효과를 메모해 두면 요약에도 함께 포함할 수 있습니다. 줄바꿈마다 별도의 효과로 처리됩니다.
+      </p>
+      <div class="effect-grid">
+        <div class="effect-field">
+          <label for="effectRune">룬</label>
+          <textarea id="effectRune" rows="4" placeholder="#생존 데미지 2.1% 증가"></textarea>
+        </div>
+        <div class="effect-field">
+          <label for="effectGem">보석</label>
+          <textarea id="effectGem" rows="4"></textarea>
+        </div>
+        <div class="effect-field">
+          <label for="effectPet">펫</label>
+          <textarea id="effectPet" rows="4"></textarea>
+        </div>
+        <div class="effect-field">
+          <label for="effectLevel">레벨업 카드</label>
+          <textarea id="effectLevel" rows="4"></textarea>
+        </div>
+        <div class="effect-field">
+          <label for="effectTitle">타이틀</label>
+          <textarea id="effectTitle" rows="4"></textarea>
+        </div>
+        <div class="effect-field">
+          <label for="effectOther">기타</label>
+          <textarea id="effectOther" rows="4"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>효과 요약</h2>
+      <ul id="effectSummaryList" class="effect-summary-list">
+        <li class="rune-summary-empty">특수 효과가 없습니다.</li>
+      </ul>
+    </section>
+  </main>
+  <footer>
+    <p>모비노기 장비 커스텀 도구의 능력치 계산기 페이지입니다.</p>
+  </footer>
+  <script type="module" src="js/stats.js"></script>
+</body>
+</html>

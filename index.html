@@ -45,11 +45,30 @@
       <div class="equipment-layout">
         <div id="equipmentSection" class="equipment-section"></div>
         <aside id="runeInfoPanel" class="rune-info">
-          <h3>룬 선택</h3>
+          <div class="rune-info-header">
+            <h3>룬 선택</h3>
+            <button type="button" id="openSummaryBtn" class="secondary summary-open-btn">📊 요약 보기</button>
+          </div>
           <button type="button" id="backToEquipmentBtn" class="rune-back-btn">장비로 이동</button>
           <p id="runeInfoMessage" class="rune-info-message">장비를 선택하면 사용 가능한 룬이 표시됩니다.</p>
           <div id="runeList" class="rune-list"></div>
         </aside>
+      </div>
+      <div id="runeSummaryModal" class="rune-summary-modal hidden">
+        <div class="rune-summary-backdrop" data-action="close-summary"></div>
+        <div class="rune-summary-dialog">
+          <div class="rune-summary-dialog-header">
+            <h3>선택한 룬 요약</h3>
+            <button type="button" class="summary-close-btn" data-action="close-summary">✕</button>
+          </div>
+          <div id="runeSummaryContent" class="rune-summary-dialog-body">
+            <p class="rune-summary-empty">캐릭터를 선택하면 룬 요약이 표시됩니다.</p>
+          </div>
+          <div class="rune-summary-dialog-footer">
+            <button type="button" id="copySummaryBtn" class="secondary summary-copy-btn">📋 복사</button>
+            <button type="button" class="primary summary-close-btn" data-action="close-summary">닫기</button>
+          </div>
+        </div>
       </div>
       <div class="editor-actions">
         <button id="saveCharacterBtn" class="primary">저장</button>

@@ -59,11 +59,20 @@ const backToEquipmentBtn = document.getElementById('backToEquipmentBtn');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importFileInput = document.getElementById('importFileInput');
+const runeSummaryModal = document.getElementById('runeSummaryModal');
+const runeSummaryContent = document.getElementById('runeSummaryContent');
+const openSummaryBtn = document.getElementById('openSummaryBtn');
+const copySummaryBtn = document.getElementById('copySummaryBtn');
+const summaryCloseButtons = document.querySelectorAll('[data-action="close-summary"]');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 
 const THEME_STORAGE_KEY = 'mabinogiTheme';
 const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let currentTheme = 'light';
+const SUMMARY_COPY_LABEL_DEFAULT = copySummaryBtn?.textContent?.trim() || '📋 복사';
+const SUMMARY_COPY_LABEL_SUCCESS = '✅ 복사됨';
+const SUMMARY_COPY_LABEL_ERROR = '⚠️ 복사 실패';
+let summaryCopyFeedbackTimer = null;
 
 function getStoredTheme() {
   try {
@@ -253,6 +262,173 @@ function createRuneBonusSelect(eqKey, bonusIndex, config, initialValue) {
   return select;
 }
 
+function getRuneOptionDisplay(value) {
+  return value && value.trim() ? value : '없음';
+}
+
+function buildRuneSummaryRows(char) {
+  const rows = [];
+  if (!char || !char.equipment) return rows;
+  equipmentTypes.forEach((eq) => {
+    const eqData = char.equipment[eq.key] || {};
+    const runeName = eqData.rune && eqData.rune.trim() ? eqData.rune : '없음';
+    const bonusConfig = EQUIP_KEYS_WITH_RUNE_BONUS[eq.key];
+    let bonus1 = '—';
+    let bonus2 = '—';
+    if (bonusConfig) {
+      const options = Array.isArray(eqData.runeOptions) ? eqData.runeOptions : [];
+      bonus1 = getRuneOptionDisplay(options[0] || '');
+      bonus2 = getRuneOptionDisplay(options[1] || '');
+    }
+    rows.push({ equipment: eq.name, rune: runeName, bonus1, bonus2, hasBonus: Boolean(bonusConfig) });
+  });
+  return rows;
+}
+
+function buildRuneSummaryText(char) {
+  if (!char) return '';
+  const lines = [`캐릭터: ${char.name || '이름없음'} (${char.job || '직업 미지정'})`];
+  buildRuneSummaryRows(char).forEach(({ equipment, rune, bonus1, bonus2, hasBonus }) => {
+    if (hasBonus) {
+      lines.push(`[${equipment}] ${rune} | 보조1: ${bonus1} | 보조2: ${bonus2}`);
+    } else {
+      lines.push(`[${equipment}] ${rune}`);
+    }
+  });
+  return lines.join('\n');
+}
+
+function resetCopyButtonLabel() {
+  if (!copySummaryBtn) return;
+  if (summaryCopyFeedbackTimer) {
+    clearTimeout(summaryCopyFeedbackTimer);
+    summaryCopyFeedbackTimer = null;
+  }
+  copySummaryBtn.textContent = SUMMARY_COPY_LABEL_DEFAULT;
+}
+
+function renderRuneSummary() {
+  if (!runeSummaryContent) return;
+  const char = getCurrentEditingChar();
+  runeSummaryContent.innerHTML = '';
+
+  if (!char) {
+    const emptyMessage = document.createElement('p');
+    emptyMessage.className = 'rune-summary-empty';
+    emptyMessage.textContent = '캐릭터를 선택하면 룬 요약이 표시됩니다.';
+    runeSummaryContent.appendChild(emptyMessage);
+    if (copySummaryBtn) {
+      copySummaryBtn.disabled = true;
+      resetCopyButtonLabel();
+    }
+    return;
+  }
+
+  const rows = buildRuneSummaryRows(char);
+  if (!rows.length) {
+    const emptyMessage = document.createElement('p');
+    emptyMessage.className = 'rune-summary-empty';
+    emptyMessage.textContent = '선택된 룬이 없습니다.';
+    runeSummaryContent.appendChild(emptyMessage);
+  } else {
+    const table = document.createElement('table');
+    table.className = 'rune-summary-table';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>장비</th><th>룬</th><th>보조 1</th><th>보조 2</th></tr>';
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    rows.forEach(({ equipment, rune, bonus1, bonus2, hasBonus }) => {
+      const tr = document.createElement('tr');
+      [equipment, rune, hasBonus ? bonus1 : '—', hasBonus ? bonus2 : '—'].forEach((value) => {
+        const td = document.createElement('td');
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    runeSummaryContent.appendChild(table);
+  }
+
+  if (copySummaryBtn) {
+    copySummaryBtn.disabled = false;
+    resetCopyButtonLabel();
+  }
+}
+
+function refreshRuneSummary() {
+  renderRuneSummary();
+}
+
+async function copyRuneSummaryToClipboard() {
+  const char = getCurrentEditingChar();
+  if (!char || !copySummaryBtn || copySummaryBtn.disabled) return;
+  const summaryText = buildRuneSummaryText(char);
+  if (!summaryText.trim()) {
+    showCopyFeedback(SUMMARY_COPY_LABEL_ERROR, true);
+    return;
+  }
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(summaryText);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = summaryText;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    showCopyFeedback(SUMMARY_COPY_LABEL_SUCCESS, false);
+  } catch (error) {
+    console.warn('룬 요약 복사 실패:', error);
+    showCopyFeedback(SUMMARY_COPY_LABEL_ERROR, true);
+  }
+}
+
+function showCopyFeedback(label, isError) {
+  if (!copySummaryBtn) return;
+  if (summaryCopyFeedbackTimer) {
+    clearTimeout(summaryCopyFeedbackTimer);
+  }
+  copySummaryBtn.textContent = label;
+  summaryCopyFeedbackTimer = setTimeout(() => {
+    resetCopyButtonLabel();
+  }, isError ? 2500 : 1500);
+}
+
+function isSummaryModalOpen() {
+  return runeSummaryModal && !runeSummaryModal.classList.contains('hidden');
+}
+
+function openSummaryModal() {
+  renderRuneSummary();
+  if (!runeSummaryModal) return;
+  resetCopyButtonLabel();
+  runeSummaryModal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+function closeSummaryModal() {
+  if (!runeSummaryModal || !isSummaryModalOpen()) return;
+  runeSummaryModal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+  resetCopyButtonLabel();
+}
+
+function handleSummaryKeydown(event) {
+  if (event.key === 'Escape' && isSummaryModalOpen()) {
+    event.preventDefault();
+    closeSummaryModal();
+  }
+}
+
 function init() {
   jobs.forEach((job) => {
     const option = document.createElement('option');
@@ -288,11 +464,26 @@ function init() {
       storeTheme(nextTheme);
     });
   }
+  if (copySummaryBtn) {
+    copySummaryBtn.addEventListener('click', copyRuneSummaryToClipboard);
+    copySummaryBtn.disabled = true;
+    resetCopyButtonLabel();
+  }
+  if (openSummaryBtn) {
+    openSummaryBtn.addEventListener('click', openSummaryModal);
+  }
+  if (summaryCloseButtons.length > 0) {
+    summaryCloseButtons.forEach((btn) =>
+      btn.addEventListener('click', () => closeSummaryModal())
+    );
+  }
+  document.addEventListener('keydown', handleSummaryKeydown);
 
   resetActiveWeaponRuneSeason();
   resetActiveArmorRuneSeason();
   resetActiveEmblemRuneSeason();
   renderCharacterList();
+  refreshRuneSummary();
 }
 
 function createNewCharacter() {
@@ -745,9 +936,10 @@ function updateRuneDisplay(equipKey, runeName = '없음') {
   if (runeName === '없음' && EQUIP_KEYS_WITH_RUNE_BONUS[equipKey]) {
     const current = getCurrentEditingChar();
     if (current && current.equipment && current.equipment[equipKey]) {
-      current.equipment[equipKey].runeOptions = ['', ''];
+      current.equipment[equipKey].runeOptions = EQUIP_KEYS_WITH_RUNE_BONUS[equipKey] ? ['', ''] : [];
     }
   }
+  refreshRuneSummary();
 }
 
 function applyGemVisibility(show = getShowGemOptions()) {
@@ -782,6 +974,7 @@ function updateAccessoryRuneOptions(jobName) {
   if (currentKey) {
     renderRuneInfoForEquipment(currentKey);
   }
+  refreshRuneSummary();
 }
 
 function handleJobChange() {
@@ -789,6 +982,7 @@ function handleJobChange() {
   if (!currentChar) return;
   currentChar.job = charJobSelect.value;
   updateAccessoryRuneOptions(currentChar.job);
+  refreshRuneSummary();
 }
 
 function handleGemToggle(event) {
@@ -903,12 +1097,13 @@ function openCharacterEditor(index) {
           if (!current) return;
           const targetEq = current.equipment[eq.key];
           if (!targetEq) return;
-          if (!Array.isArray(targetEq.runeOptions)) {
-            targetEq.runeOptions = ['', ''];
-          }
-          targetEq.runeOptions[bonusIndex] = event.target.value;
-          setActiveEquipment(eq.key);
-        });
+        if (!Array.isArray(targetEq.runeOptions)) {
+          targetEq.runeOptions = ['', ''];
+        }
+        targetEq.runeOptions[bonusIndex] = event.target.value;
+        setActiveEquipment(eq.key);
+        refreshRuneSummary();
+      });
         runeBonusRow.appendChild(bonusSelect);
       });
 
@@ -924,6 +1119,7 @@ function openCharacterEditor(index) {
 
   updateAccessoryRuneOptions(char.job);
   applyGemVisibility();
+  refreshRuneSummary();
   charEditorSection.classList.remove('hidden');
   deleteCharacterBtn.classList.remove('hidden');
   if (equipmentTypes.length > 0) {
@@ -933,6 +1129,7 @@ function openCharacterEditor(index) {
 }
 
 function hideEditor() {
+  closeSummaryModal();
   charEditorSection.classList.add('hidden');
   setSelectedCharIndex(null);
   deleteCharacterBtn.classList.add('hidden');
@@ -943,6 +1140,7 @@ function hideEditor() {
   resetActiveArmorRuneSeason();
   resetActiveEmblemRuneSeason();
   resetRunePanel();
+  refreshRuneSummary();
 }
 
 function saveCurrentCharacter() {

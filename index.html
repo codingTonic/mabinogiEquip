@@ -13,7 +13,6 @@
         <p>캐릭터마다 직업과 장비를 설정하고, 보석과 룬 효과를 확인해 보세요.</p>
       </div>
       <div class="header-actions">
-        <a class="secondary summary-open-btn" href="stats.html">능력치 계산기</a>
         <button id="themeToggleBtn" type="button" class="secondary theme-toggle-btn">🌙 다크 모드</button>
       </div>
     </div>
@@ -50,9 +49,18 @@
         <aside id="runeInfoPanel" class="rune-info">
           <div class="rune-info-header">
             <h3>룬 선택</h3>
-            <button type="button" id="openSummaryBtn" class="secondary summary-open-btn">📊 요약 보기</button>
+            <div class="rune-info-actions">
+              <button type="button" id="openSummaryBtn" class="secondary summary-open-btn">📊 요약 보기</button>
+              <button type="button" id="openStatsCalcBtn" class="secondary stats-link-btn">능력치 계산기</button>
+            </div>
           </div>
-      <button type="button" id="backToEquipmentBtn" class="rune-back-btn">장비로 이동</button>
+          <div class="rune-filter-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="toggleFavoritesOnly" />
+              기억중인룬
+            </label>
+          </div>
+          <button type="button" id="backToEquipmentBtn" class="rune-back-btn">장비로 이동</button>
           <p id="runeInfoMessage" class="rune-info-message">장비를 선택하면 사용 가능한 룬이 표시됩니다.</p>
           <div id="runeList" class="rune-list"></div>
         </aside>

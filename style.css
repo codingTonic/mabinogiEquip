@@ -440,7 +440,7 @@ select {
 
 .rune-option {
   display: grid;
-  grid-template-columns: 130px 100px 1fr;
+  grid-template-columns: 100px 1fr 100px;
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid #d4d8e0;
@@ -456,6 +456,48 @@ select {
   white-space: nowrap;
   text-align: left;
   padding-left: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rune-favorite-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  color: #ccc;
+  transition: all 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.rune-favorite-btn:hover {
+  color: #ffcc00;
+  background: transparent;
+  transform: scale(1.2);
+}
+
+.rune-favorite-btn:focus {
+  outline: none;
+  background: transparent;
+}
+
+.rune-favorite-btn.active {
+  color: #ffcc00;
+  background: transparent;
+}
+
+.rune-filter-row {
+  padding: 0.5rem 1rem;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .rune-option-grade {
@@ -469,6 +511,21 @@ select {
 .rune-option-grade .grade-row {
   display: flex;
   gap: 0.3rem;
+}
+
+.rune-grade-select {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #cfd3dc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.rune-grade-select:disabled {
+  background: #f1f3f6;
+  cursor: default;
 }
 
 .rune-grade-badge {
@@ -860,6 +917,17 @@ body.theme-dark .summary-copy-btn:disabled {
   color: #6f7894;
 }
 
+body.theme-dark .rune-grade-select {
+  background: #1f2737;
+  border-color: #3a435a;
+  color: #e6ebf7;
+}
+
+body.theme-dark .rune-grade-select:disabled {
+  background: #242c3d;
+  color: #7d88a8;
+}
+
 body.theme-dark .rune-option {
   background: #252c3f;
   border-color: #36405a;
@@ -868,6 +936,31 @@ body.theme-dark .rune-option {
 
 body.theme-dark .rune-option-name {
   color: #f5f7fa;
+}
+
+body.theme-dark .rune-favorite-btn {
+  color: #666;
+  background: transparent;
+}
+
+body.theme-dark .rune-favorite-btn:hover {
+  color: #ffcc00;
+  background: transparent;
+}
+
+body.theme-dark .rune-favorite-btn:focus {
+  outline: none;
+  background: transparent;
+}
+
+body.theme-dark .rune-favorite-btn.active {
+  color: #ffcc00;
+  background: transparent;
+}
+
+body.theme-dark .rune-filter-row {
+  background-color: #2a3140;
+  border-bottom: 1px solid #3a4150;
 }
 
 body.theme-dark .rune-option-desc {
@@ -972,8 +1065,10 @@ body.theme-dark footer {
     width: 100%;
   }
 
-  .summary-open-btn {
+  .summary-open-btn,
+  .stats-link-btn {
     width: 100%;
+    text-align: center;
   }
 
   .equipment-layout {
@@ -1127,7 +1222,7 @@ body.theme-dark footer {
   align-items: center;
 }
 
-.header-actions a {
+.stats-link-btn {
   text-decoration: none;
   padding: 0.45rem 0.9rem;
   border-radius: 4px;
@@ -1136,8 +1231,14 @@ body.theme-dark footer {
   background: #fff;
 }
 
-.header-actions a:hover {
+.stats-link-btn:hover {
   background: #eef2fb;
+}
+
+.rune-info-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .sr-only {
@@ -1168,6 +1269,16 @@ body.theme-dark.stats-page {
 
 body.theme-dark .stats-desc {
   color: #b8c4db;
+}
+
+body.theme-dark .stats-link-btn {
+  background: #1f2533;
+  border-color: #3a435a;
+  color: #e6ebf7;
+}
+
+body.theme-dark .stats-link-btn:hover {
+  background: #2d3650;
 }
 
 body.theme-dark .header-actions a {

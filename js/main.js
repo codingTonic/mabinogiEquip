@@ -29,6 +29,9 @@ import {
   getRuneSelectionDraft,
   setRuneSelectionDraft,
   resetRuneSelectionDraft,
+  getRuneGradeDraft,
+  setRuneGradeDraft,
+  resetRuneGradeDraft,
   getActiveWeaponRuneSeason,
   setActiveWeaponRuneSeason,
   resetActiveWeaponRuneSeason,
@@ -66,14 +69,20 @@ const copySummaryBtn = document.getElementById('copySummaryBtn');
 const gemSummaryList = document.getElementById('gemSummaryList');
 const summaryCloseButtons = document.querySelectorAll('[data-action="close-summary"]');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
+const openStatsCalcBtn = document.getElementById('openStatsCalcBtn');
+const toggleFavoritesOnlyCheckbox = document.getElementById('toggleFavoritesOnly');
 
 const THEME_STORAGE_KEY = 'mabinogiTheme';
+const CHARACTERS_STORAGE_KEY = 'mabinogiCharacters';
+const FAVORITE_RUNES_STORAGE_KEY = 'mabinogiFavoriteRunes';
 const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let currentTheme = 'light';
 const SUMMARY_COPY_LABEL_DEFAULT = copySummaryBtn?.textContent?.trim() || '📋 복사';
 const SUMMARY_COPY_LABEL_SUCCESS = '✅ 복사됨';
 const SUMMARY_COPY_LABEL_ERROR = '⚠️ 복사 실패';
 let summaryCopyFeedbackTimer = null;
+let favoriteRunes = new Set();
+let showFavoritesOnly = false;
 
 function getStoredTheme() {
   try {
@@ -90,6 +99,68 @@ function storeTheme(theme) {
   } catch (error) {
     console.warn('테마를 저장할 수 없습니다.', error);
   }
+}
+
+function saveCharactersToStorage() {
+  try {
+    const characters = getCharacters();
+    const showGem = getShowGemOptions();
+    const data = {
+      version: '1.0',
+      characters,
+      showGemOptions: showGem,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('캐릭터 데이터를 저장할 수 없습니다.', error);
+  }
+}
+
+function loadCharactersFromStorage() {
+  try {
+    const stored = localStorage.getItem(CHARACTERS_STORAGE_KEY);
+    if (!stored) return null;
+
+    const data = JSON.parse(stored);
+    if (!data.characters || !Array.isArray(data.characters)) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.warn('저장된 캐릭터 데이터를 불러올 수 없습니다.', error);
+    return null;
+  }
+}
+
+function loadFavoriteRunes() {
+  try {
+    const stored = localStorage.getItem(FAVORITE_RUNES_STORAGE_KEY);
+    if (!stored) return new Set();
+    const arr = JSON.parse(stored);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (error) {
+    console.warn('즐겨찾기 룬 데이터를 불러올 수 없습니다.', error);
+    return new Set();
+  }
+}
+
+function saveFavoriteRunes() {
+  try {
+    localStorage.setItem(FAVORITE_RUNES_STORAGE_KEY, JSON.stringify([...favoriteRunes]));
+  } catch (error) {
+    console.warn('즐겨찾기 룬을 저장할 수 없습니다.', error);
+  }
+}
+
+function toggleFavoriteRune(runeName) {
+  if (favoriteRunes.has(runeName)) {
+    favoriteRunes.delete(runeName);
+  } else {
+    favoriteRunes.add(runeName);
+  }
+  saveFavoriteRunes();
 }
 
 function applyTheme(theme) {
@@ -363,7 +434,14 @@ function buildRuneSummaryRows(char) {
       bonus1 = getRuneOptionDisplay(options[0] || '');
       bonus2 = getRuneOptionDisplay(options[1] || '');
     }
-    rows.push({ equipment: eq.name, rune: runeName, bonus1, bonus2, hasBonus: Boolean(bonusConfig) });
+    rows.push({
+      equipment: eq.name,
+      rune: runeName,
+      grade: eqData.runeGrade || null,
+      bonus1,
+      bonus2,
+      hasBonus: Boolean(bonusConfig)
+    });
   });
   return rows;
 }
@@ -617,9 +695,10 @@ function renderRuneSummary() {
     table.appendChild(thead);
 
     const tbody = document.createElement('tbody');
-    rows.forEach(({ equipment, rune, bonus1, bonus2, hasBonus }) => {
+    rows.forEach(({ equipment, rune, grade, bonus1, bonus2, hasBonus }) => {
       const tr = document.createElement('tr');
-      [equipment, rune, hasBonus ? bonus1 : '—', hasBonus ? bonus2 : '—'].forEach((value) => {
+      const displayRune = grade && rune !== '없음' ? `${rune} (${grade})` : rune;
+      [equipment, displayRune, hasBonus ? bonus1 : '—', hasBonus ? bonus2 : '—'].forEach((value) => {
         const td = document.createElement('td');
         td.textContent = value;
         tr.appendChild(td);
@@ -745,6 +824,67 @@ function handleSummaryKeydown(event) {
   }
 }
 
+function handleStatsCalcOpen() {
+  const index = getSelectedCharIndex();
+  if (index !== null && index !== undefined) {
+    const characters = getCharacters();
+    const char = characters[index];
+    if (char) {
+      char.name = charNameInput.value.trim() || '이름없음';
+      char.job = charJobSelect.value;
+
+      const gradeDraft = getRuneGradeDraft();
+
+      equipmentTypes.forEach((eq) => {
+        const eqData = char.equipment[eq.key];
+        for (let slotIndex = 0; slotIndex < eq.gemSlots; slotIndex++) {
+          for (let optIndex = 0; optIndex < 3; optIndex++) {
+            const control = document.querySelector(
+              `[data-gem-input="true"][data-equip-key="${eq.key}"][data-slot-index="${slotIndex}"][data-opt-index="${optIndex}"]`
+            );
+            if (control) {
+              eqData.gemOptions[slotIndex][optIndex] = control.value.trim();
+            }
+          }
+        }
+        if (!EQUIP_KEYS_WITH_RUNE_BONUS[eq.key]) {
+          eqData.runeOptions = [];
+        } else {
+          if (!Array.isArray(eqData.runeOptions)) {
+            eqData.runeOptions = ['', ''];
+          }
+          for (let bonusIndex = 0; bonusIndex < 2; bonusIndex++) {
+            const bonusControl = document.querySelector(
+              `[data-rune-bonus-input="true"][data-equip-key="${eq.key}"][data-bonus-index="${bonusIndex}"]`
+            );
+            if (bonusControl) {
+              eqData.runeOptions[bonusIndex] = bonusControl.value.trim();
+            } else if (!eqData.runeOptions[bonusIndex]) {
+              eqData.runeOptions[bonusIndex] = '';
+            }
+          }
+        }
+        const draft = getRuneSelectionDraft();
+        eqData.rune = draft[eq.key] || '없음';
+        const grade = gradeDraft[eq.key] || null;
+        eqData.runeGrade = eqData.rune === '없음' ? null : grade;
+      });
+
+      // 캐릭터 데이터를 LocalStorage에 자동 저장
+      saveCharactersToStorage();
+
+      // 편집 중이던 캐릭터 인덱스를 SessionStorage에 저장
+      try {
+        sessionStorage.setItem('editingCharacterIndex', index.toString());
+      } catch (error) {
+        console.warn('SessionStorage 저장 실패:', error);
+      }
+    }
+  }
+
+  window.location.href = 'stats.html';
+}
+
 function init() {
   jobs.forEach((job) => {
     const option = document.createElement('option');
@@ -795,12 +935,67 @@ function init() {
     );
   }
   document.addEventListener('keydown', handleSummaryKeydown);
+  if (openStatsCalcBtn) {
+    openStatsCalcBtn.addEventListener('click', handleStatsCalcOpen);
+  }
+
+  // 즐겨찾기 필터 체크박스
+  if (toggleFavoritesOnlyCheckbox) {
+    toggleFavoritesOnlyCheckbox.addEventListener('change', (event) => {
+      showFavoritesOnly = event.target.checked;
+      const currentKey = getActiveEquipKey();
+      if (currentKey) {
+        renderRuneInfoForEquipment(currentKey);
+      }
+    });
+  }
+
+  // 즐겨찾기 데이터 로드
+  favoriteRunes = loadFavoriteRunes();
 
   resetActiveWeaponRuneSeason();
   resetActiveArmorRuneSeason();
   resetActiveEmblemRuneSeason();
+
+  // LocalStorage에서 캐릭터 데이터 복원
+  const savedData = loadCharactersFromStorage();
+  if (savedData && savedData.characters && savedData.characters.length > 0) {
+    // 저장된 캐릭터 데이터로 복원
+    while (getCharacters().length > 0) {
+      removeCharacter(0);
+    }
+    savedData.characters.forEach((char) => {
+      const validChar = validateCharacterData(char);
+      if (validChar) {
+        addCharacter(validChar);
+      }
+    });
+    if (savedData.showGemOptions !== undefined) {
+      setShowGemOptions(savedData.showGemOptions);
+      toggleGemOptionsCheckbox.checked = savedData.showGemOptions;
+    }
+  }
+
   renderCharacterList();
   refreshRuneSummary();
+
+  // 능력치 계산기에서 돌아온 경우 이전 편집 상태 복원
+  try {
+    const editingIndex = sessionStorage.getItem('editingCharacterIndex');
+    if (editingIndex !== null) {
+      const index = parseInt(editingIndex, 10);
+      if (!isNaN(index) && index >= 0 && index < getCharacters().length) {
+        // SessionStorage에서 편집 인덱스 삭제
+        sessionStorage.removeItem('editingCharacterIndex');
+        // 편집 모드로 재진입
+        setTimeout(() => {
+          openCharacterEditor(index);
+        }, 100);
+      }
+    }
+  } catch (error) {
+    console.warn('SessionStorage 복원 실패:', error);
+  }
 }
 
 function createNewCharacter() {
@@ -816,7 +1011,8 @@ function createNewCharacter() {
     newChar.equipment[eq.key] = {
       gemOptions,
       rune: '없음',
-      runeOptions: bonusConfig ? ['', ''] : []
+      runeOptions: bonusConfig ? ['', ''] : [],
+      runeGrade: null
     };
   });
 
@@ -871,7 +1067,8 @@ function buildGemOptionSummary(char) {
       eqData = {
         gemOptions: Array.from({ length: eq.gemSlots }, () => ['', '', '']),
         rune: '없음',
-        runeOptions: ['', '']
+        runeOptions: ['', ''],
+        runeGrade: null
       };
       char.equipment[eq.key] = eqData;
     }
@@ -958,58 +1155,102 @@ function renderRuneInfoForEquipment(equipKey) {
     runeInfoMessage.textContent = `${equipmentMeta.name}에 장착할 룬을 선택하세요.`;
   }
 
+  const runeGradeDraft = getRuneGradeDraft();
+
   const createOptionRow = (rune, defaultRarities = []) => {
+    const availableRarities = getAvailableRaritiesForRune(rune, defaultRarities);
     const row = document.createElement('div');
     row.className = 'rune-option';
-    if (rune.name === (runeDraft[equipKey] || '없음')) {
+    const selectedName = runeDraft[equipKey] || '없음';
+    const isActive = rune.name === selectedName;
+    if (isActive) {
       row.classList.add('active');
     }
 
     const nameCell = document.createElement('div');
     nameCell.className = 'rune-option-name';
-    nameCell.textContent = rune.name;
+
+    // 즐겨찾기 버튼 추가
+    const favoriteBtn = document.createElement('button');
+    favoriteBtn.type = 'button';
+    favoriteBtn.className = 'rune-favorite-btn';
+    const isFavorite = favoriteRunes.has(rune.name);
+    favoriteBtn.textContent = isFavorite ? '★' : '☆';
+    favoriteBtn.title = isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가';
+    if (isFavorite) {
+      favoriteBtn.classList.add('active');
+    }
+    favoriteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavoriteRune(rune.name);
+      renderRuneInfoForEquipment(equipKey);
+    });
+
+    nameCell.appendChild(favoriteBtn);
+
+    const nameText = document.createElement('span');
+    nameText.textContent = rune.name;
+    nameCell.appendChild(nameText);
+
     row.appendChild(nameCell);
+
+    const descCell = document.createElement('div');
+    descCell.className = 'rune-option-desc';
+    descCell.textContent = rune.description || '-';
+    row.appendChild(descCell);
 
     const gradeCell = document.createElement('div');
     gradeCell.className = 'rune-option-grade';
-    const rawRarities = Array.isArray(rune.rarities) && rune.rarities.length
-      ? rune.rarities
-      : rune.rarity
-      ? [rune.rarity]
-      : defaultRarities;
-    const displayRarities = [];
-    rawRarities.forEach((label) => {
-      const normalized = normalizeRarityLabel(label);
-      if (normalized && !displayRarities.includes(normalized)) {
-        displayRarities.push(normalized);
-      }
-    });
+    const currentChar = getCurrentEditingChar();
+    const eqData = currentChar?.equipment?.[equipKey];
+    const activeGrade = runeGradeDraft[equipKey] || (eqData?.rune === rune.name ? eqData.runeGrade : null) || null;
 
-    if (displayRarities.length === 0) {
-      gradeCell.textContent = '-';
-    } else {
-      displayRarities.forEach((label) => {
+    if (availableRarities.length <= 1) {
+      const displayGrade = availableRarities.length === 1 ? availableRarities[0] : null;
+      if (!displayGrade) {
+        gradeCell.textContent = '-';
+      } else {
         const badgeRow = document.createElement('div');
         badgeRow.className = 'grade-row';
         const badge = document.createElement('span');
         badge.className = 'rune-grade-badge';
-        const classKey = resolveRarityClass(label);
+        const classKey = resolveRarityClass(displayGrade);
         if (classKey) {
           badge.classList.add(`rune-grade-${classKey}`);
         }
-        badge.textContent = label;
+        badge.textContent = displayGrade;
         badgeRow.appendChild(badge);
         gradeCell.appendChild(badgeRow);
+      }
+    } else {
+      const select = document.createElement('select');
+      select.className = 'rune-grade-select';
+      availableRarities.forEach((label) => {
+        const normalized = normalizeRarityLabel(label);
+        if (!normalized) return;
+        const option = document.createElement('option');
+        option.value = normalized;
+        option.textContent = normalized;
+        select.appendChild(option);
       });
+      const defaultGrade = determineInitialGrade(equipKey, availableRarities, rune.name);
+      const valueToUse = isActive
+        ? (activeGrade && availableRarities.includes(activeGrade) ? activeGrade : defaultGrade)
+        : availableRarities[0];
+      if (valueToUse) {
+        select.value = valueToUse;
+      }
+      select.disabled = !isActive;
+      select.addEventListener('click', (event) => event.stopPropagation());
+      select.addEventListener('change', (event) => {
+        event.stopPropagation();
+        handleRuneGradeChange(equipKey, event.target.value || null);
+      });
+      gradeCell.appendChild(select);
     }
     row.appendChild(gradeCell);
 
-    const descCell = document.createElement('div');
-    descCell.className = 'rune-option-desc';
-    descCell.textContent = rune.description;
-    row.appendChild(descCell);
-
-    row.addEventListener('click', () => selectRuneForEquipment(equipKey, rune.name));
+    row.addEventListener('click', () => selectRuneForEquipment(equipKey, rune, availableRarities));
     return row;
   };
 
@@ -1020,14 +1261,14 @@ function renderRuneInfoForEquipment(equipKey) {
     nameHeader.className = 'rune-option-name';
     nameHeader.textContent = '이름';
     header.appendChild(nameHeader);
-    const gradeHeader = document.createElement('div');
-    gradeHeader.className = 'rune-option-grade';
-    gradeHeader.textContent = '등급';
-    header.appendChild(gradeHeader);
     const descHeader = document.createElement('div');
     descHeader.className = 'rune-option-desc';
     descHeader.textContent = '설명';
     header.appendChild(descHeader);
+    const gradeHeader = document.createElement('div');
+    gradeHeader.className = 'rune-option-grade';
+    gradeHeader.textContent = '등급';
+    header.appendChild(gradeHeader);
     return header;
   };
 
@@ -1092,14 +1333,28 @@ function renderRuneInfoForEquipment(equipKey) {
     const renderGroups = (keyword = '') => {
       const lower = keyword.toLowerCase();
       const showBase = !lower || baseRuneName.includes(lower) || baseRuneDesc.includes(lower);
-      baseGroup.style.display = showBase ? '' : 'none';
+      const baseIsFavorite = favoriteRunes.has(baseRunes[0]?.name || '');
+
+      // 즐겨찾기 필터 적용
+      if (showFavoritesOnly && !baseIsFavorite) {
+        baseGroup.style.display = 'none';
+      } else {
+        baseGroup.style.display = showBase ? '' : 'none';
+      }
 
       groupedContainer.innerHTML = '';
       activeSeasonGroups.forEach((group) => {
         const filteredRunes = group.runes.filter((rune) => {
           const nameMatch = rune.name.toLowerCase().includes(lower);
           const descMatch = (rune.description || '').toLowerCase().includes(lower);
-          return lower.length === 0 ? true : nameMatch || descMatch;
+          const keywordMatch = lower.length === 0 ? true : nameMatch || descMatch;
+
+          // 즐겨찾기 필터 적용
+          if (showFavoritesOnly && !favoriteRunes.has(rune.name)) {
+            return false;
+          }
+
+          return keywordMatch;
         });
         if (!filteredRunes.length) return;
         const groupContainer = document.createElement('div');
@@ -1161,16 +1416,52 @@ function renderRuneInfoForEquipment(equipKey) {
       runeListEl.appendChild(tabs);
     }
 
+    // 검색창 추가
+    const { wrapper: searchWrapper, input: searchInput } = createSearchInput();
+    runeListEl.appendChild(searchWrapper);
+
     const baseGroup = document.createElement('div');
     baseGroup.className = 'rune-group rune-group-basic';
     baseGroup.appendChild(createHeaderRow());
     baseGroup.appendChild(createOptionRow(baseRunes[0]));
     runeListEl.appendChild(baseGroup);
 
-    runeGroups
-      .filter((group) => group.season === getSeason())
-      .forEach((group) => {
-        if (!group.runes.length) return;
+    const groupedContainer = document.createElement('div');
+    groupedContainer.className = 'rune-groups-container';
+    runeListEl.appendChild(groupedContainer);
+
+    const activeSeasonGroups = runeGroups.filter((group) => group.season === getSeason());
+
+    const baseRuneName = (baseRunes[0]?.name || '').toLowerCase();
+    const baseRuneDesc = (baseRunes[0]?.description || '').toLowerCase();
+
+    const renderGroups = (keyword = '') => {
+      const lower = keyword.toLowerCase();
+      const showBase = !lower || baseRuneName.includes(lower) || baseRuneDesc.includes(lower);
+      const baseIsFavorite = favoriteRunes.has(baseRunes[0]?.name || '');
+
+      // 즐겨찾기 필터 적용
+      if (showFavoritesOnly && !baseIsFavorite) {
+        baseGroup.style.display = 'none';
+      } else {
+        baseGroup.style.display = showBase ? '' : 'none';
+      }
+
+      groupedContainer.innerHTML = '';
+      activeSeasonGroups.forEach((group) => {
+        const filteredRunes = group.runes.filter((rune) => {
+          const nameMatch = rune.name.toLowerCase().includes(lower);
+          const descMatch = (rune.description || '').toLowerCase().includes(lower);
+          const keywordMatch = lower.length === 0 ? true : nameMatch || descMatch;
+
+          // 즐겨찾기 필터 적용
+          if (showFavoritesOnly && !favoriteRunes.has(rune.name)) {
+            return false;
+          }
+
+          return keywordMatch;
+        });
+        if (!filteredRunes.length) return;
         const groupContainer = document.createElement('div');
         groupContainer.className = 'rune-group';
         const heading = document.createElement('h4');
@@ -1178,11 +1469,22 @@ function renderRuneInfoForEquipment(equipKey) {
         groupContainer.appendChild(heading);
         groupContainer.appendChild(createHeaderRow());
         const defaultRarities = group.rarity ? [group.rarity] : [];
-        group.runes.forEach((rune) =>
+        filteredRunes.forEach((rune) =>
           groupContainer.appendChild(createOptionRow(rune, defaultRarities))
         );
-        runeListEl.appendChild(groupContainer);
+        groupedContainer.appendChild(groupContainer);
       });
+
+      if (!groupedContainer.childElementCount && baseGroup.style.display === 'none') {
+        const empty = document.createElement('div');
+        empty.className = 'rune-search-empty';
+        empty.textContent = '검색 결과가 없습니다.';
+        groupedContainer.appendChild(empty);
+      }
+    };
+
+    searchInput.addEventListener('input', (event) => renderGroups(event.target.value.trim()));
+    renderGroups('');
     return;
   }
 
@@ -1202,10 +1504,23 @@ function renderRuneInfoForEquipment(equipKey) {
     const lower = keyword.toLowerCase();
     runeOptionsContainer.innerHTML = '';
     const filtered = runePool.filter((rune) => {
-      if (!lower) return true;
+      if (!lower) {
+        // 즐겨찾기 필터만 적용
+        if (showFavoritesOnly && !favoriteRunes.has(rune.name)) {
+          return false;
+        }
+        return true;
+      }
       const nameMatch = rune.name.toLowerCase().includes(lower);
       const descMatch = (rune.description || '').toLowerCase().includes(lower);
-      return nameMatch || descMatch;
+      const keywordMatch = nameMatch || descMatch;
+
+      // 즐겨찾기 필터 적용
+      if (showFavoritesOnly && !favoriteRunes.has(rune.name)) {
+        return false;
+      }
+
+      return keywordMatch;
     });
     if (filtered.length === 0) {
       const empty = document.createElement('div');
@@ -1222,15 +1537,82 @@ function renderRuneInfoForEquipment(equipKey) {
   renderOptions('');
 }
 
-function selectRuneForEquipment(equipKey, runeName) {
-  const currentChar = getCurrentEditingChar();
-  if (!currentChar) return;
-  const eqData = currentChar.equipment[equipKey];
-  if (!eqData) return;
+function getAvailableRaritiesForRune(rune, fallback = []) {
+  if (rune && Array.isArray(rune.rarities) && rune.rarities.length) {
+    return rune.rarities.map((label) => normalizeRarityLabel(label)).filter(Boolean);
+  }
+  if (rune && rune.rarity) {
+    const normalized = normalizeRarityLabel(rune.rarity);
+    return normalized ? [normalized] : [];
+  }
+  return fallback || [];
+}
 
-  const draft = { ...getRuneSelectionDraft(), [equipKey]: runeName };
-  setRuneSelectionDraft(draft);
+function determineInitialGrade(equipKey, availableRarities = [], runeName = '') {
+  if (!availableRarities || availableRarities.length === 0) {
+    return null;
+  }
+  const draft = getRuneGradeDraft()[equipKey];
+  if (draft && availableRarities.includes(draft)) {
+    return draft;
+  }
+  const currentChar = getCurrentEditingChar();
+  const eqData = currentChar?.equipment?.[equipKey];
+  if (eqData && eqData.rune === runeName && eqData.runeGrade && availableRarities.includes(eqData.runeGrade)) {
+    return eqData.runeGrade;
+  }
+  return availableRarities[0];
+}
+
+function updateRuneGradeDraftValue(equipKey, grade) {
+  const draft = { ...getRuneGradeDraft() };
+  if (grade) {
+    draft[equipKey] = grade;
+  } else {
+    delete draft[equipKey];
+  }
+  setRuneGradeDraft(draft);
+}
+
+function applyRuneSelection(equipKey, runeName, grade = null) {
+  const selectionDraft = { ...getRuneSelectionDraft(), [equipKey]: runeName };
+  setRuneSelectionDraft(selectionDraft);
+
+  const currentChar = getCurrentEditingChar();
+  if (currentChar && currentChar.equipment && currentChar.equipment[equipKey]) {
+    currentChar.equipment[equipKey].rune = runeName;
+    currentChar.equipment[equipKey].runeGrade = grade || null;
+    if (runeName === '없음' && EQUIP_KEYS_WITH_RUNE_BONUS[equipKey]) {
+      currentChar.equipment[equipKey].runeOptions = EQUIP_KEYS_WITH_RUNE_BONUS[equipKey] ? ['', ''] : [];
+    }
+  }
+
+  updateRuneGradeDraftValue(equipKey, grade);
   updateRuneDisplay(equipKey, runeName);
+  refreshRuneSummary();
+}
+
+function handleRuneGradeChange(equipKey, grade) {
+  const normalized = grade || null;
+  const currentChar = getCurrentEditingChar();
+  if (currentChar && currentChar.equipment && currentChar.equipment[equipKey]) {
+    currentChar.equipment[equipKey].runeGrade = normalized;
+  }
+  updateRuneGradeDraftValue(equipKey, normalized);
+  const runeDraft = getRuneSelectionDraft();
+  const runeName = runeDraft[equipKey] || '없음';
+  updateRuneDisplay(equipKey, runeName);
+  refreshRuneSummary();
+}
+
+function selectRuneForEquipment(equipKey, rune, fallbackRarities = []) {
+  const runeName = rune?.name || '없음';
+  let grade = null;
+  if (runeName !== '없음') {
+    const available = getAvailableRaritiesForRune(rune, fallbackRarities);
+    grade = determineInitialGrade(equipKey, available, runeName);
+  }
+  applyRuneSelection(equipKey, runeName, grade);
   renderRuneInfoForEquipment(equipKey);
 }
 
@@ -1238,8 +1620,12 @@ function updateRuneDisplay(equipKey, runeName = '없음') {
   const label = equipmentSection.querySelector(
     `.rune-display[data-equip-key="${equipKey}"] span`
   );
+  const currentChar = getCurrentEditingChar();
+  const eqData = currentChar?.equipment?.[equipKey];
+  const grade = eqData?.runeGrade;
   if (label) {
-    label.textContent = runeName;
+    const displayName = grade && runeName !== '없음' ? `${runeName} (${grade})` : runeName;
+    label.textContent = displayName;
   }
   const bonusControls = equipmentSection.querySelectorAll(
     `.rune-bonus-select[data-equip-key="${equipKey}"]`
@@ -1250,13 +1636,6 @@ function updateRuneDisplay(equipKey, runeName = '없음') {
       select.value = '';
     }
   });
-  if (runeName === '없음' && EQUIP_KEYS_WITH_RUNE_BONUS[equipKey]) {
-    const current = getCurrentEditingChar();
-    if (current && current.equipment && current.equipment[equipKey]) {
-      current.equipment[equipKey].runeOptions = EQUIP_KEYS_WITH_RUNE_BONUS[equipKey] ? ['', ''] : [];
-    }
-  }
-  refreshRuneSummary();
 }
 
 function applyGemVisibility(show = getShowGemOptions()) {
@@ -1272,6 +1651,7 @@ function updateAccessoryRuneOptions(jobName) {
   }
   const allowedNames = getAllowedRunesForJob(jobName).map((r) => r.name);
   const draft = { ...getRuneSelectionDraft() };
+  const gradeDraft = { ...getRuneGradeDraft() };
   equipmentTypes.forEach((eq) => {
     const isAccessory = eq.key === 'necklace' || eq.key.startsWith('ring');
     if (!isAccessory) return;
@@ -1281,11 +1661,14 @@ function updateAccessoryRuneOptions(jobName) {
         currentChar.equipment[eq.key].runeOptions = EQUIP_KEYS_WITH_RUNE_BONUS[eq.key]
           ? ['', '']
           : [];
+        currentChar.equipment[eq.key].runeGrade = null;
       }
+      delete gradeDraft[eq.key];
       updateRuneDisplay(eq.key, '없음');
     }
   });
   setRuneSelectionDraft(draft);
+  setRuneGradeDraft(gradeDraft);
 
   const currentKey = getActiveEquipKey();
   if (currentKey) {
@@ -1318,6 +1701,7 @@ function openCharacterEditor(index) {
   resetRunePanel();
   setActiveEquipKey(null);
   resetRuneSelectionDraft();
+  resetRuneGradeDraft();
   resetActiveWeaponRuneSeason();
   resetActiveArmorRuneSeason();
   resetActiveEmblemRuneSeason();
@@ -1328,9 +1712,16 @@ function openCharacterEditor(index) {
   equipmentSection.innerHTML = '';
 
   const draft = {};
+  const gradeDraft = {};
   equipmentTypes.forEach((eq) => {
     const eqData = char.equipment[eq.key];
     if (!eqData) return;
+    if (typeof eqData.rune === 'undefined') {
+      eqData.rune = '없음';
+    }
+    if (typeof eqData.runeGrade === 'undefined') {
+      eqData.runeGrade = null;
+    }
     if (!Array.isArray(eqData.gemOptions)) {
       eqData.gemOptions = Array.from({ length: eq.gemSlots }, () => ['', '', '']);
     } else {
@@ -1392,7 +1783,10 @@ function openCharacterEditor(index) {
     runeDisplay.className = 'rune-display';
     runeDisplay.dataset.equipKey = eq.key;
     const storedRune = eqData.rune || '없음';
-    runeDisplay.innerHTML = `현재 룬: <span>${storedRune}</span>`;
+    const displayRune = eqData.runeGrade && storedRune !== '없음'
+      ? `${storedRune} (${eqData.runeGrade})`
+      : storedRune;
+    runeDisplay.innerHTML = `현재 룬: <span>${displayRune}</span>`;
     eqDiv.appendChild(runeDisplay);
 
     if (bonusConfig) {
@@ -1431,8 +1825,12 @@ function openCharacterEditor(index) {
     equipmentSection.appendChild(eqDiv);
 
     draft[eq.key] = storedRune;
+    if (eqData.runeGrade) {
+      gradeDraft[eq.key] = eqData.runeGrade;
+    }
   });
   setRuneSelectionDraft(draft);
+  setRuneGradeDraft(gradeDraft);
 
   updateAccessoryRuneOptions(char.job);
   applyGemVisibility();
@@ -1453,6 +1851,7 @@ function hideEditor() {
   setCurrentEditingChar(null);
   setActiveEquipKey(null);
   resetRuneSelectionDraft();
+  resetRuneGradeDraft();
   resetActiveWeaponRuneSeason();
   resetActiveArmorRuneSeason();
   resetActiveEmblemRuneSeason();
@@ -1472,6 +1871,8 @@ function saveCurrentCharacter() {
 
   char.name = charNameInput.value.trim() || '이름없음';
   char.job = charJobSelect.value;
+
+  const gradeDraft = getRuneGradeDraft();
 
   equipmentTypes.forEach((eq) => {
     const eqData = char.equipment[eq.key];
@@ -1504,10 +1905,13 @@ function saveCurrentCharacter() {
     }
     const draft = getRuneSelectionDraft();
     eqData.rune = draft[eq.key] || '없음';
+    const grade = gradeDraft[eq.key] || null;
+    eqData.runeGrade = eqData.rune === '없음' ? null : grade;
   });
 
   hideEditor();
   renderCharacterList();
+  saveCharactersToStorage();
 }
 
 function deleteCurrentCharacter() {
@@ -1516,6 +1920,7 @@ function deleteCurrentCharacter() {
   removeCharacter(index);
   hideEditor();
   renderCharacterList();
+  saveCharactersToStorage();
 }
 
 function exportSettings() {
@@ -1632,6 +2037,7 @@ function validateCharacterData(char) {
       const runeOptions = Array.isArray(eqData.runeOptions)
         ? eqData.runeOptions.slice(0, 2).map(opt => (opt || '').toString().substring(0, 50))
         : [];
+      const runeGrade = (eqData.runeGrade || '').toString().substring(0, 20).trim();
 
       const normalizedRuneOptions = bonusConfig
         ? (() => {
@@ -1648,14 +2054,16 @@ function validateCharacterData(char) {
             )
           : Array.from({ length: eq.gemSlots }, () => ['', '', '']),
         rune: (eqData.rune || '없음').toString().substring(0, 100),
-        runeOptions: normalizedRuneOptions
+        runeOptions: normalizedRuneOptions,
+        runeGrade: runeGrade ? runeGrade : null
       };
     } else {
       const bonusConfig = EQUIP_KEYS_WITH_RUNE_BONUS[eq.key];
       validChar.equipment[eq.key] = {
         gemOptions: Array.from({ length: eq.gemSlots }, () => ['', '', '']),
         rune: '없음',
-        runeOptions: bonusConfig ? ['', ''] : []
+        runeOptions: bonusConfig ? ['', ''] : [],
+        runeGrade: null
       };
     }
   });

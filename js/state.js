@@ -8,6 +8,7 @@ let selectedCharIndex = null;
 let currentEditingChar = null;
 let activeEquipKey = null;
 let runeSelectionDraft = {};
+let runeGradeSelectionDraft = {};
 let activeWeaponRuneSeason = weaponSeasons[0] || null;
 let activeArmorRuneSeason = armorSeasons[0] || null;
 let activeEmblemRuneSeason = emblemSeasons[0] || null;
@@ -60,6 +61,20 @@ export function setRuneSelectionDraft(draft) {
 export function resetRuneSelectionDraft() {
   runeSelectionDraft = {};
 }
+
+function getRuneGradeDraft() {
+  return runeGradeSelectionDraft;
+}
+
+function setRuneGradeDraft(draft) {
+  runeGradeSelectionDraft = draft;
+}
+
+function resetRuneGradeDraft() {
+  runeGradeSelectionDraft = {};
+}
+
+export { getRuneGradeDraft, setRuneGradeDraft, resetRuneGradeDraft };
 
 export function getActiveWeaponRuneSeason() {
   return activeWeaponRuneSeason;

@@ -1,6 +1,10 @@
 // js/stats.js
 // 능력치 계산 전용 페이지 스크립트
 
+const THEME_STORAGE_KEY = 'mabinogiTheme';
+const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+let currentTheme = 'light';
+
 const ATTRIBUTE_DEFINITIONS = [
   { label: '힘', base: 1239, decimals: 0 },
   { label: '솜씨', base: 1239, decimals: 0 },
@@ -37,12 +41,69 @@ const CATEGORIES = [
   { key: 'other', label: '기타' }
 ];
 
-const statsState = CATEGORIES.reduce((acc, category) => {
+const STATS_STORAGE_KEY = 'mabinogiStatsData';
+
+function getStoredTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (error) {
+    console.warn('로컬 저장소에 접근할 수 없습니다.', error);
+    return null;
+  }
+}
+
+function storeTheme(theme) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (error) {
+    console.warn('테마를 저장할 수 없습니다.', error);
+  }
+}
+
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+  document.body.classList.toggle('theme-dark', isDark);
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.textContent = isDark ? '☀️ 라이트 모드' : '🌙 다크 모드';
+  }
+  currentTheme = theme;
+  console.log('Theme applied:', theme, '| Body classes:', document.body.className);
+}
+
+function loadStatsFromStorage() {
+  try {
+    const stored = localStorage.getItem(STATS_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.warn('저장된 능력치 데이터를 불러올 수 없습니다.', error);
+  }
+  return null;
+}
+
+function saveStatsToStorage(statsData, effectData) {
+  try {
+    const data = {
+      stats: statsData,
+      effects: effectData,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('능력치 데이터를 저장할 수 없습니다.', error);
+  }
+}
+
+const savedData = loadStatsFromStorage();
+
+const statsState = savedData?.stats || CATEGORIES.reduce((acc, category) => {
   acc[category.key] = {};
   return acc;
 }, {});
 
-const effectState = CATEGORIES.reduce((acc, category) => {
+const effectState = savedData?.effects || CATEGORIES.reduce((acc, category) => {
   acc[category.key] = [];
   return acc;
 }, {});
@@ -115,6 +176,7 @@ function initializeTable() {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
       renderEffectSummary();
+      saveStatsToStorage(statsState, effectState);
       syncStatCalculator();
     });
   });
@@ -137,6 +199,7 @@ function handleStatInput(event) {
     statsState[category][attribute] = parsed;
   }
   renderTotals();
+  saveStatsToStorage(statsState, effectState);
   syncStatCalculator();
 }
 
@@ -235,6 +298,7 @@ function resetAllInputs() {
   });
   renderTotals();
   renderEffectSummary();
+  saveStatsToStorage(statsState, effectState);
   syncStatCalculator();
 }
 
@@ -262,13 +326,70 @@ async function copySummary() {
   }
 }
 
+function restoreStoredValues() {
+  inputRefs.forEach(({ element, attribute, category }) => {
+    const value = statsState[category][attribute];
+    if (value !== undefined && value !== 0) {
+      element.value = value;
+    }
+  });
+
+  Object.entries(elements.effectFields).forEach(([key, textarea]) => {
+    if (effectState[key] && effectState[key].length > 0) {
+      textarea.value = effectState[key].join('\n');
+    }
+  });
+}
+
 function init() {
+  // 테마 초기화
+  const storedTheme = getStoredTheme();
+  if (storedTheme) {
+    applyTheme(storedTheme);
+  } else {
+    applyTheme(prefersDarkQuery.matches ? 'dark' : 'light');
+  }
+
+  // 시스템 테마 변경 감지
+  const handlePrefersChange = (event) => {
+    if (!getStoredTheme()) {
+      applyTheme(event.matches ? 'dark' : 'light');
+    }
+  };
+
+  if (typeof prefersDarkQuery.addEventListener === 'function') {
+    prefersDarkQuery.addEventListener('change', handlePrefersChange);
+  } else if (typeof prefersDarkQuery.addListener === 'function') {
+    prefersDarkQuery.addListener(handlePrefersChange);
+  }
+
+  // 테마 토글 버튼
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      storeTheme(nextTheme);
+    });
+  }
+
   initializeTable();
+  restoreStoredValues();
   renderTotals();
   renderEffectSummary();
 
   elements.resetBtn.addEventListener('click', resetAllInputs);
   elements.copyBtn.addEventListener('click', copySummary);
+
+  // "편집으로 돌아가기" 버튼 처리
+  const backToMainBtn = document.getElementById('backToMainBtn');
+  if (backToMainBtn) {
+    backToMainBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+
+  syncStatCalculator();
 }
 
 if (document.readyState === 'loading') {
